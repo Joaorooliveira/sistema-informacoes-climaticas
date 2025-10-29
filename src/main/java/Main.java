@@ -1,13 +1,12 @@
-import com.fasterxml.jackson.databind.util.JSONPObject;
-
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import org.json.JSONObject;
+import java.io.InputStream; //
 
 public class Main {
     public static void main(String[] args) {
@@ -15,66 +14,86 @@ public class Main {
         System.out.print("Digite o nome da cidade: ");
         String cidade = sc.nextLine();
 
-        try{
+        try {
             String dadosClimaticos = getDadosClimaticos(cidade); //retorna um JSON
 
             // Codigo 1006 significa localizacao nao encontrada
-            if(dadosClimaticos.contains("\"code\":1006")){ //"\"code\":1006" representa "code": 1006
-                System.out.println("Localizacao nao encontrada .Por favor, tente novamente.");
+            if (dadosClimaticos.contains("\"code\":1006")) { //"\"code\":1006" representa "code": 1006
+                System.out.println("Localizacao nao encontrada. Por favor, tente novamente.");
 
-            }else
+            } else {
                 imprimirDadosClimaticos(dadosClimaticos);
-        }catch(Exception e) {
-            System.out.println(e.getMessage());
+            }
+        } catch (Exception e) {
+            // Imprime mais detalhes do erro para ajudar a depurar
+            System.out.println("Ocorreu um erro: " + e.getMessage());
+            e.printStackTrace();
         }
     }
-    public static String getDadosClimaticos(String cidade) throws Exception{
-        String apiKey = Files.readString(Paths.get("/resources/api-Key.txt")).trim();
 
-        String formataNomeCidade = URLEncoder.encode(cidade, "UTF-8");
-        String apiUrl = "http://api.weatherapi.com/v1/current.json?key="+ apiKey+"&q="+formataNomeCidade;
-        HttpRequest request = HttpRequest.newBuilder() // Comeca a construcao de uma nova solicitacao HTTP
+    public static String getDadosClimaticos(String cidade) throws Exception {
+        String apiKey;
+        ClassLoader classLoader = Main.class.getClassLoader();
+
+        // Pede o arquivo "api-Key" que está no classpath (Maven coloca o
+        // 'resources' lá)
+        try (InputStream inputStream = classLoader.getResourceAsStream("api-Key")) {
+
+            if (inputStream == null) {
+                // Se não achou o arquivo, lança um erro claro
+                throw new Exception("Arquivo 'api-Key' não encontrado na pasta 'resources'.\n" +
+                        "Verifique se o nome está correto (sem .txt) e se ele está em 'src/main/resources'.");
+            }
+            // Lê todos os bytes do arquivo e converte para String
+            apiKey = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).trim();
+        }
+
+        String formataNomeCidade = URLEncoder.encode(cidade, StandardCharsets.UTF_8);
+        String apiUrl = "http://api.weatherapi.com/v1/current.json?key=" + apiKey + "&q=" + formataNomeCidade;
+
+        HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
-                .build(); //Finaliza a construcao da solicitacao HTTP.
-        //Criar objeto enviar solicitacoes HTTP e receber respostas HTTP, para acessar o site da WeatherAPI
+                .build();
         HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        //Agora vamos enviar requisicoes HTTP e recebber respostas HTTP, comunicar com o site da API Metereologica
-        HttpResponse<String> response = client.send(request,HttpResponse.BodyHandlers.ofString());
-        return response.body(); // retorna os dados metereologicos obtidos no site API (WeatherAPI)
+        return response.body();
     }
 
     //Metodo para imprimir os dados metereologicos de forma organizada
-    public static void imprimirDadosClimaticos(String dados){
+    public static void imprimirDadosClimaticos(String dados) {
         //System.out.println("Dados originais (JSON) obtidos no site metereologico"+dados);
 
-        JSONPObject dadosJson = new JSONPObject(dados);
-        JSONPObject informacoesMetereologicas = dadosJson.getJSONObject("current");
+        JSONObject dadosJson = new JSONObject(dados);
 
         //Extrai os dados da localizacao
         String cidade = dadosJson.getJSONObject("location").getString("name");
         String pais = dadosJson.getJSONObject("location").getString("country");
 
+        // Pega o objeto "current" de "dadosJson"
+        JSONObject informacoesMetereologicas = dadosJson.getJSONObject("current");
+
         //Extrai os dados adicionais
         String condicaoTempo = informacoesMetereologicas.getJSONObject("condition").getString("text");
         int umidade = informacoesMetereologicas.getInt("humidity");
-        float velocidadeVento = informacoesMetereologicas.getFloat("wind_kph");
-        float pressaoAtmosferica = informacoesMetereologicas.getFloat("pressure_mb");
-        float sensacaoTermica = informacoesMetereologicas.getFloat("feelslike_c");
-        float temperaturaAtual = informacoesMetereologicas.getFloat("temp_c");
+        double velocidadeVento = informacoesMetereologicas.getDouble("wind_kph");
+        double pressaoAtmosferica = informacoesMetereologicas.getDouble("pressure_mb");
+        double sensacaoTermica = informacoesMetereologicas.getDouble("feelslike_c");
+        double temperaturaAtual = informacoesMetereologicas.getDouble("temp_c");
 
         //Extrai a data e hora da string retornada pela API
-        String dataHoraString = informacoesMetereologicas.getString("last_update");
+        String dataHoraString = informacoesMetereologicas.getString("last_updated");
 
         //Imprime as informacoes atuais
-        System.out.println("Informacoes Metereologicas para "+ cidade + ", "+ pais);
-        System.out.println("Data e hora : " + dataHoraString);
-        System.out.println("Temperatura atual : " + temperaturaAtual+"C");
-        System.out.println("Sensacao Termica : " + sensacaoTermica+"C");
+        System.out.println("-------------------------------------");
+        System.out.println("Informacoes Metereologicas para " + cidade + ", " + pais);
+        System.out.println("Data e hora: " + dataHoraString);
+        System.out.println("Temperatura atual: " + temperaturaAtual + "C");
+        System.out.println("Sensacao Termica: " + sensacaoTermica + "C");
         System.out.println("Condicao do tempo: " + condicaoTempo);
-        System.out.println("Umidade: "+umidade+"%");
-        System.out.println("Velocidade do Vento: " + velocidadeVento+" km/h");
-        System.out.println("Pressao Atmosferica: " + pressaoAtmosferica);
-
+        System.out.println("Umidade: " + umidade + "%");
+        System.out.println("Velocidade do Vento: " + velocidadeVento + " km/h");
+        System.out.println("Pressao Atmosferica: " + pressaoAtmosferica + " mb"); // Unidade é mb
+        System.out.println("-------------------------------------");
     }
 }
