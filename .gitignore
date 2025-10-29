@@ -1,19 +1,64 @@
+=================================================
+
+ARQUIVOS DE SEGREDOS (SECRETS)
+
+NUNCA comite esses arquivos!
+
+=================================================
+
+Ignora o arquivo que você estava usando para a chave
+
+api-Key
+
+Ignora outros arquivos que possam conter segredos
+
+*.secret
+
+É uma boa prática ignorar .properties,
+
+pois eles podem conter senhas de banco, etc.
+
+*.properties
+
+=================================================
+
+DEPENDÊNCIAS E BUILDS (O seu já tinha)
+
+=================================================
+
 target/
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+!/src/main//target/
+!/src/test//target/
 .kotlin
 
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+Logs (Adicionei isso, é boa prática)
+
+logs/
+*.log
+
+=================================================
+
+ARQUIVOS DE IDE (O seu já tinha)
+
+=================================================
+
+IntelliJ IDEA
+
+O seu estava mais específico, vou usar a versão
+
+mais simples que ignora a pasta inteira:
+
+.idea/
+
+Arquivos antigos do IntelliJ
+
 *.iws
 *.iml
 *.ipr
 
-### Eclipse ###
+Eclipse
+
 .apt_generated
 .classpath
 .factorypath
@@ -22,18 +67,26 @@ target/
 .springBeans
 .sts4-cache
 
-### NetBeans ###
+NetBeans
+
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+!/src/main//build/
+!/src/test//build/
 
-### VS Code ###
+VS Code
+
 .vscode/
 
-### Mac OS ###
+=================================================
+
+ARQUIVOS DE SISTEMA OPERACIONAL (O seu já tinha)
+
+=================================================
+
 .DS_Store
+Thumbs.db

@@ -6,7 +6,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import org.json.JSONObject;
-import java.io.InputStream; //
 
 public class Main {
     public static void main(String[] args) {
@@ -20,32 +19,23 @@ public class Main {
             // Codigo 1006 significa localizacao nao encontrada
             if (dadosClimaticos.contains("\"code\":1006")) { //"\"code\":1006" representa "code": 1006
                 System.out.println("Localizacao nao encontrada. Por favor, tente novamente.");
-
             } else {
                 imprimirDadosClimaticos(dadosClimaticos);
             }
         } catch (Exception e) {
-            // Imprime mais detalhes do erro para ajudar a depurar
             System.out.println("Ocorreu um erro: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            sc.close();
         }
     }
 
     public static String getDadosClimaticos(String cidade) throws Exception {
-        String apiKey;
-        ClassLoader classLoader = Main.class.getClassLoader();
+        String apiKey = System.getenv("WEATHER_API_KEY");
 
-        // Pede o arquivo "api-Key" que está no classpath (Maven coloca o
-        // 'resources' lá)
-        try (InputStream inputStream = classLoader.getResourceAsStream("api-Key")) {
-
-            if (inputStream == null) {
-                // Se não achou o arquivo, lança um erro claro
-                throw new Exception("Arquivo 'api-Key' não encontrado na pasta 'resources'.\n" +
-                        "Verifique se o nome está correto (sem .txt) e se ele está em 'src/main/resources'.");
-            }
-            // Lê todos os bytes do arquivo e converte para String
-            apiKey = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).trim();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new Exception("Variável de ambiente 'WEATHER_API_KEY' não foi configurada.\n" +
+                    "Configure-a no seu sistema ou na sua IDE (Run Configuration).");
         }
 
         String formataNomeCidade = URLEncoder.encode(cidade, StandardCharsets.UTF_8);
